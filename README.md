@@ -47,13 +47,13 @@ included in the file doc/build.txt
 However, the real quick and dirty way to get started is to
 type the command
 ```shell
-./ns3 configure --enable-examples
+./ns3 configure --enable-examples --enable-tests 
 ```
 
 followed by
 
 ```shell
-./ns3
+./ns3 build
 ```
 
 in the directory which contains this README file. The files
@@ -93,18 +93,22 @@ the ns-3 website: https://www.nsnam.org/documentation/.
 
 This documentation includes:
 
-  - a tutorial
+  - tutorials
+    - [ns-3 Tutorial](https://www.nsnam.org/docs/tutorial/html/) 
 
   - a reference manual
+    - [ns-3 Manual](https://www.nsnam.org/docs/manual/html/index.html)
 
   - models in the ns-3 model library
+    - [ns-3 Model Library](https://www.nsnam.org/docs/models/html/index.html)
 
-  - a wiki for user-contributed tips: https://www.nsnam.org/wiki/
-
+  - a wiki for user-contributed tips
+    - [ns-3 wiki](https://www.nsnam.org/wiki/Main_Page)
+    
   - API documentation generated using doxygen: this is
     a reference manual, most likely not very well suited
     as introductory text:
-    https://www.nsnam.org/doxygen/index.html
+      - [Doxygen](https://www.nsnam.org/doxygen/index.html)
 
 ## Working with the development version of ns-3
 
