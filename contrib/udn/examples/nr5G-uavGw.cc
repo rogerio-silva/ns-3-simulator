@@ -1,17 +1,21 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 #include "ns3/core-module.h"
+#include "ns3/config-store-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
-#include "ns3/point-to-point-module.h"
+#include "ns3/internet-apps-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/mobility-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/flow-monitor-module.h"
+#include "ns3/buildings-module.h"
 #include "ns3/nr-module.h"
 #include "ns3/antenna-module.h"
-#include "ns3/flow-monitor-module.h"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("simGlobecom-log");
+NS_LOG_COMPONENT_DEFINE ("nr5G-uavGw-log");
 
 int main(int argc, char *argv[]){
 
@@ -33,7 +37,7 @@ int main(int argc, char *argv[]){
     uint16_t ueNumPergNb = 1;
 
     // General parameters
-    bool logging = false;
+    bool logging = true;
 
     // 5G Traffic parameters (that we will use inside this script):
     uint32_t udpPacketSizeBe = 1252;
@@ -58,7 +62,8 @@ int main(int argc, char *argv[]){
 
     // Where we will store the output files.
     std::string simTag = "sim-1";
-    std::string outputDir = "./sim-res";
+    std::string outputDir = "./";
+//    std::string outputDir = "./sim-res";
 
     if (logging)
     {
