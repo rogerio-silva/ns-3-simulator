@@ -1,8 +1,25 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-
+/*
+ *   Copyright (c) 2022 Universidade Federal de Goiás - UFG
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License version 2 as
+ *   published by the Free Software Foundation;
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *   Author Rogério Sousa rogeriosousa@discente.ufg.br
+ */
 #include "ns3/core-module.h"
 #include "ns3/config-store-module.h"
-#include "ns3/network-module.h"
+//#include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/internet-apps-module.h"
 #include "ns3/applications-module.h"
@@ -30,11 +47,9 @@ int main(int argc, char *argv[]){
      */
 
     // Scenario parameters (that we will use inside this script):
-    // gNB - Base Station 5G, UAVs - Mobile Gateways, endD - LoRa Sensors
-    uint16_t gNbNum = 1;
-//    uint16_t uavNum = 1;
-//    uint16_t endDNum = 1;
-    uint16_t ueNumPergNb = 1;
+    // gNB - Base Station 5G, UAVs - User equipments (Mobile LoRaWAN Gateways)
+    uint16_t gNbNum = 2;
+    uint16_t uavNumPergNb = 2;
 
     // General parameters
     bool logging = true;
@@ -53,12 +68,10 @@ int main(int argc, char *argv[]){
 
     double x = pow (10, totalTxPower / 10);
 
-
     // Simulation parameters. Please don't use double to indicate seconds; use
     // ns-3 Time values which use integers to avoid portability issues.
-    Time simTime = MilliSeconds (10000);
+    Time simTime = MilliSeconds (1000);
     Time udpAppStartTime = MilliSeconds (400);
-
 
     // Where we will store the output files.
     std::string simTag = "sim-1";
@@ -85,18 +98,21 @@ int main(int argc, char *argv[]){
     */
     int64_t randomStream = 1;
     GridScenarioHelper gridScenario;
-    gridScenario.SetRows (1);
+    gridScenario.SetRows (2);
     gridScenario.SetColumns (gNbNum);
+//    #TODO - To randomize BS distance
     gridScenario.SetHorizontalBsDistance (5.0);
     gridScenario.SetVerticalBsDistance (5.0);
+//    #TODO - should the heights of the user terminals (uavs) be the same as the BS?
     gridScenario.SetBsHeight (1.5);
     gridScenario.SetUtHeight (1.5);
     // must be set before BS number
     gridScenario.SetSectorization (GridScenarioHelper::SINGLE);
     gridScenario.SetBsNumber (gNbNum);
-    gridScenario.SetUtNumber (ueNumPergNb * gNbNum);
-    gridScenario.SetScenarioHeight (3); // Create a 3x3 scenario where the UE will
-    gridScenario.SetScenarioLength (3); // be distribuited.
+    gridScenario.SetUtNumber (uavNumPergNb * gNbNum);
+//    # The oldest scenario is 3x3
+    gridScenario.SetScenarioHeight (4); // Create a 3x3 scenario where the UE will
+    gridScenario.SetScenarioLength (4); // be distributed.
     randomStream += gridScenario.AssignStreams (randomStream);
     gridScenario.CreateScenario ();
 
@@ -107,7 +123,6 @@ int main(int argc, char *argv[]){
         Ptr<Node> uav = gridScenario.GetUserTerminals ().Get (j);
         uavNodeContainer.Add (uav);
     }
-
 
     /*
      * Setup the NR module. We create the various helpers needed for the
@@ -172,24 +187,24 @@ int main(int argc, char *argv[]){
     // gNb routing between Bearer and bandwidh part
     nrHelper->SetGnbBwpManagerAlgorithmAttribute ("GBR_CONV_VOICE", UintegerValue (bwpId));
 
-    // Ue routing between Bearer and bandwidth part
+    // Ue routing between Bearer and bandwidth part #TODO Find IoT LoRa equivalent BWP
     nrHelper->SetUeBwpManagerAlgorithmAttribute ("GBR_CONV_VOICE", UintegerValue (bwpId));
 
     // install and get the pointers to the NetDevices, which contains all the NR stack:
-    NetDeviceContainer eNBNetDev = nrHelper->InstallGnbDevice (gridScenario.GetBaseStations (), allBwps);
+    NetDeviceContainer gNBNetDev = nrHelper->InstallGnbDevice (gridScenario.GetBaseStations (), allBwps);
     NetDeviceContainer uavNetDev = nrHelper->InstallUeDevice (uavNodeContainer, allBwps);
 
-    randomStream += nrHelper->AssignStreams (eNBNetDev, randomStream);
+    randomStream += nrHelper->AssignStreams (gNBNetDev, randomStream);
     randomStream += nrHelper->AssignStreams (uavNetDev, randomStream);
 
     // Get the first netdevice (enbNetDev.Get (0)) and the first bandwidth part (0)
     // and set the attribute.
-    nrHelper->GetGnbPhy (eNBNetDev.Get (0), 0)->SetAttribute ("Numerology", UintegerValue (numerologyBwp));
-    nrHelper->GetGnbPhy (eNBNetDev.Get (0), 0)->SetAttribute ("TxPower", DoubleValue (10 * log10 ((bandwidthBand / totalBandwidth) * x)));
+    nrHelper->GetGnbPhy (gNBNetDev.Get (0), 0)->SetAttribute ("Numerology", UintegerValue (numerologyBwp));
+    nrHelper->GetGnbPhy (gNBNetDev.Get (0), 0)->SetAttribute ("TxPower", DoubleValue (10 * log10 ((bandwidthBand / totalBandwidth) * x)));
 
     // When all the configuration is done, explicitly call UpdateConfig ()
 
-    for (auto it = eNBNetDev.Begin (); it != eNBNetDev.End (); ++it)
+    for (auto it = gNBNetDev.Begin (); it != gNBNetDev.End (); ++it)
     {
         DynamicCast<NrGnbNetDevice> (*it)->UpdateConfig ();
     }
@@ -233,8 +248,12 @@ int main(int argc, char *argv[]){
         ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
     }
 
-    // attach UEs to the closest eNB
-    nrHelper->AttachToClosestEnb (uavNetDev, eNBNetDev);
+    // attach UEs to the <closest>/selected eNB #TODO attach to selected gNB <AttachToEnb>
+//    nrHelper->AttachToEnb (uavNetDev.Get (0), gNBNetDev.Get (1));
+//    nrHelper->AttachToEnb (uavNetDev.Get (1), gNBNetDev.Get (0));
+//    nrHelper->AttachToEnb (uavNetDev.Get (2), gNBNetDev.Get (1));
+//    nrHelper->AttachToEnb (uavNetDev.Get (3), gNBNetDev.Get (0));
+    nrHelper->AttachToClosestEnb (uavNetDev, gNBNetDev);
 
     /*
    * Traffic part. Install traffic: type conversational voice,
@@ -294,7 +313,7 @@ int main(int argc, char *argv[]){
     clientApps.Stop (simTime);
 
     // enable the traces provided by the nr module
-    //nrHelper->EnableTraces();
+    nrHelper->EnableTraces();
 
     FlowMonitorHelper flowmonHelper;
     NodeContainer endpointNodes;
